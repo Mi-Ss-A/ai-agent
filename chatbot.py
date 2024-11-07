@@ -1,5 +1,7 @@
 import os
-from langchain_community.document_loaders import TextLoader
+#from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders.csv_loader import CSVLoader #csvloader    
+#from langchain_community.document_loaders import DirectoryLoader #directoryloader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -11,16 +13,19 @@ import time
 dotenv.load_dotenv()
 
 # 텍스트 파일 로드
-def load_knowledge_base(file_path):
+def load_knowledge_base():
     try:
-        loader = TextLoader(file_path, encoding='utf-8')
+        loader = CSVLoader(file_path="./files/card_info.csv", encoding='utf-8')
         data = loader.load()
         print("데이터 로딩 완료")
-        print(f"로드된 문서 수: {len(data)}")
+        print(f"로드된 문서의 수: {len(data)}")
+        for i in range(len(data)):
+            print(f"\n[{i}번 문서 내용]\n{data[i].page_content[800:900]}")
         return data
     except Exception as e:
         print(f"로딩 중 에러 발생: {e}")
         return None
+
 
 # 텍스트 분할
 def split_documents(data, chunk_size=500):
@@ -29,7 +34,7 @@ def split_documents(data, chunk_size=500):
     
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
-        chunk_overlap=0
+        chunk_overlap=50
     )
     try:
         all_splits = text_splitter.split_documents(data)
@@ -51,12 +56,14 @@ def create_agent(llm, tools, memory_key="history"):
     # 시스템 메시지 및 프롬프트 설정
     system_message = SystemMessage(
         content=(
-            "You are a nice customer service agent. "
-            "Do your best to answer the questions. "
-            "Feel free to use any tools available to look up "
-            "relevant information, only if necessary. "
-            "If you don't know the answer, just say you don't know. "
-            "Make sure to answer in Korean"
+            "You are a helpful and knowledgeable financial assistant that provides detailed information about Woori Bank's financial products. "
+            "Your task is to assist users with inquiries related to Woori Bank's products and services, including credit cards, loans, and savings accounts. "
+            "Answer questions about specific products with details such as benefits, fees, eligibility, and other important information. "
+            "If the user asks about products or services from other banks, politely inform them that you only provide information about Woori Bank. "
+            "If the information is not available in your knowledge base, tell the user that you cannot answer their question. "
+            "Make sure to answer all questions in Korean. "
+            "If you do not know the answer, say '저는 그에 대한 정보를 알지 못합니다.'"
+            "Please explain each item in paragraphs."
         )
     )
 
@@ -78,7 +85,7 @@ def create_agent(llm, tools, memory_key="history"):
 # 메인 실행 부분
 def main():
     # 1. 데이터 로드
-    data = load_knowledge_base("sample_text.txt")
+    data = load_knowledge_base()
     if not data:
         raise ValueError("문서 로딩에 실패했습니다.")
 
@@ -96,8 +103,8 @@ def main():
     from langchain.agents.agent_toolkits import create_retriever_tool
     tool = create_retriever_tool(
         retriever,
-        "Dalpha_customer_service_guide",
-        "Searches and returns information regarding the customer service guide.",
+        "wibee_ChatBot",
+        "Searches and returns information regarding the financial service guide.",
     )
     tools = [tool]
 
@@ -109,7 +116,7 @@ def main():
     agent_executor = create_agent(llm, tools)
 
     # 7. Streamlit UI 설정
-    st.title("AI 고객 서비스 상담원")
+    st.title("WiBee")
 
     if "openai_model" not in st.session_state:
         st.session_state["openai_model"] = "gpt-3.5-turbo"
@@ -135,6 +142,9 @@ def main():
             result = agent_executor({"input": prompt})
             for chunk in result['output'].split():
                 full_response += chunk + " "
+                   # 조건에 따라 줄바꿈 추가
+                if chunk.endswith((":","다.", "!", "?")):  # 문장이 끝날 때 줄바꿈 추가
+                    full_response += "\n\n"
                 time.sleep(0.05)
                 message_placeholder.markdown(full_response + "▌")
             message_placeholder.markdown(full_response)
