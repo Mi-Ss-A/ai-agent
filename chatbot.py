@@ -1,9 +1,11 @@
 import os
-#from langchain_community.document_loaders import TextLoader
+import glob
+from langchain_community.document_loaders import TextLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader #csvloader    
 #from langchain_community.document_loaders import DirectoryLoader #directoryloader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
 from langchain_community.vectorstores import Chroma
 import dotenv
 import streamlit as st
@@ -12,19 +14,40 @@ import time
 # 환경 변수 로드
 dotenv.load_dotenv()
 
+def load_faq_documents():
+    faq_data = []
+
+    # FAQ텍스트 파일 로드
+    txt_paths = glob.glob("./files/faq/*.txt")  # FAQ 폴더 내의 텍스트 파일들
+    for txt_path in txt_paths:
+        loader = TextLoader(file_path=txt_path,encoding='utf-8')
+        txt_data = loader.load()
+        faq_data.extend(txt_data)  # FAQ 데이터를 리스트에 추가
+        print(f"{txt_path} 텍스트 로딩 완료 - 문서 수: {len(txt_data)}")
+
+        print("faq 파일 로딩 완료")
+        
+    return faq_data
 # 텍스트 파일 로드
 def load_knowledge_base():
-    try:
-        loader = CSVLoader(file_path="./files/card_info.csv", encoding='utf-8')
-        data = loader.load()
-        print("데이터 로딩 완료")
-        print(f"로드된 문서의 수: {len(data)}")
-        for i in range(len(data)):
-            print(f"\n[{i}번 문서 내용]\n{data[i].page_content[800:900]}")
-        return data
-    except Exception as e:
-        print(f"로딩 중 에러 발생: {e}")
-        return None
+   all_data = []
+   try:
+       # 디렉토리 내 모든 CSV 파일 경로 가져오기
+       file_paths = glob.glob("./files/check/*.csv")
+       
+       # 각 CSV 파일을 로드하여 데이터 합치기
+       for file_path in file_paths:
+           loader = CSVLoader(file_path=file_path, encoding='utf-8')
+           data = loader.load()
+           all_data.extend(data)  # 데이터 추가
+           print(f"{file_path} 데이터 로딩 완료 - 문서 수: {len(data)}")
+        
+       print("모든 CSV 파일 로딩 완료")
+       print(f"총 로드된 문서 수: {len(all_data)}")
+       return all_data
+   except Exception as e:
+       print(f"로딩 중 에러 발생: {e}")
+       return None
 
 
 # 텍스트 분할
@@ -84,20 +107,43 @@ def create_agent(llm, tools, memory_key="history"):
 
 # 메인 실행 부분
 def main():
-    # 1. 데이터 로드
-    data = load_knowledge_base()
-    if not data:
-        raise ValueError("문서 로딩에 실패했습니다.")
+     #1. 카드 데이터 및 FAQ 데이터 로드
+    # data = load_knowledge_base()  # csv 데이터 로드
+    faq_data = load_faq_documents()  # FAQ 데이터 로드
+    # # 카드 및 FAQ 데이터를 하나의 리스트로 결합
+    # all_data = data + faq_data  # 데이터 결합
+    # if not all_data:
+    #     raise ValueError("문서 로딩에 실패했습니다.")
 
-    # 2. 문서 분할
-    all_splits = split_documents(data)
-    if not all_splits:
+    # # 2. 문서 분할
+    all_splits = split_documents(faq_data)
+    if not faq_data:
         raise ValueError("문서 분할에 실패했습니다.")
 
-    # 3. 벡터 저장소 생성
+    # 3. 벡터 저장소 생성 및 로드
     openai = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
-    vectorstore = Chroma.from_documents(documents=all_splits, embedding=openai, persist_directory="vectorstore_db")
+
+    # # 분할된 모든 데이터로부터 벡터 저장소 생성
+    vectorstore = Chroma.from_documents(
+        documents=faq_data, 
+        embedding=openai, 
+        persist_directory="vectorstore_db"
+    )
+    
+    #벡터 저장소 생성 및 로드
+    # vectorstore = Chroma(
+    #     persist_directory="vectorstore_db", 
+    #     embedding_function=openai
+    # )
     retriever = vectorstore.as_retriever()
+
+# 저장된 모든 문서와 메타데이터 가져오기
+    all_data = vectorstore.get()
+    for doc in all_data["documents"]:
+        print("Document:", doc)
+
+    for meta in all_data["metadatas"]:
+        print("Metadata:", meta)
 
     # 4. 검색 도구 생성
     from langchain.agents.agent_toolkits import create_retriever_tool
