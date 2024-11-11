@@ -35,6 +35,7 @@ class ChatbotAPI:
 # ChatbotAPI 클래스 인스턴스를 생성
 chatbot_api = ChatbotAPI()
 
+#front(react) 서버로 부터 text 전달 
 @api.route('/chat', methods=['POST'])
 def chat():
     data = request.json
@@ -55,3 +56,16 @@ def chat():
             'error': str(e),
             'status': 'error'
         }), 500
+
+# @api.route('/api/send-message', methods=['POST'])
+# def send_message():
+#     data = request.get_json()  # JSON 데이터 받기
+#     message = data.get('message', '')
+
+#     if not message:
+#         return jsonify({"error": "No message provided"}), 400
+
+#     # 메시지 처리 로직
+#     print(f"Received message: {message}")
+
+#     return jsonify({"status": "success", "message": message}), 200
