@@ -19,16 +19,20 @@ pipeline {
             }
         }
 
-        stage('Prepare .env file') {
+         stage('Prepare .env file') {
             steps {
                 script {
                     echo "Preparing .env file..."
-                    def envContent = credentials('env-file-credentials') // Jenkins에 저장된 .env 파일 내용
-                    writeFile file: '.env', text: envContent
-                    echo ".env file created successfully."
+                }
+                // withCredentials로 'env-file-credentials' 값을 불러오기
+                withCredentials([string(credentialsId: 'env-file-credentials', variable: 'ENV_CONTENT')]) {
+                    script {
+                        writeFile file: '.env', text: "${ENV_CONTENT}"
+                        echo ".env file created successfully."
+                    }
                 }
             }
-        }
+         }
 
         stage('Build Docker image & Push') {
             steps {
