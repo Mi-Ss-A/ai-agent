@@ -1,0 +1,18 @@
+# Git과 관련된 파일 무시
+.git
+.gitignore
+
+# Python 캐시 파일 무시
+__pycache__/
+*.py[cod]
+
+# 환경 파일 무시
+.env
+
+# 로그 파일 무시
+*.log
+
+# Node.js 또는 Python의 종속성 폴더 무시
+venv/
+
+vectorstore_db
