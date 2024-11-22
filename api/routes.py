@@ -1,4 +1,5 @@
 import sys
+import requests
 from flask import Blueprint, request, jsonify
 from langchain.agents.agent_toolkits import create_retriever_tool   
 sys.path.append('..')
@@ -72,5 +73,43 @@ def chat():
 
         return jsonify({
             'error': error_message,
+            'status': 'error'
+        }), 500
+    
+@api.route('/portfolio', methods=['POST'])
+def portfolio():
+    data = request.json
+    period = data.get('period')
+
+    if not period:
+        return jsonify({'error': 'No period provided'}), 400
+
+    try:
+        # Spring 서버로 API 요청
+        spring_response = requests.post(
+            "http://localhost:8082/api/portfolio",
+            json={"portfolioData": period}
+        )
+
+        if spring_response.status_code != 200:
+            return jsonify({
+                'error': 'Error from Spring server',
+                'details': spring_response.text,
+                'status': 'error'
+            }), spring_response.status_code
+        print(jsonify(spring_response.json()))
+
+        # Spring 응답 데이터를 Flask에서 React로 전달
+        return jsonify(spring_response.json())
+
+    except Exception as e:
+        error_message = str(e)
+        error_trace = traceback.format_exc()
+        print(f"Error occurred: {error_message}")
+        print(f"Stack trace: {error_trace}")
+
+        return jsonify({
+            'error': 'Internal server error',
+            'details': error_message,
             'status': 'error'
         }), 500
