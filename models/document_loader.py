@@ -8,7 +8,8 @@ class DocumentLoader:
     @staticmethod
     def load_faq_documents(): #faq 텍스트 파일 로드 함수 
         faq_data = []
-        txt_paths = glob.glob("./files/faq/*.txt")
+        # txt_paths = glob.glob("./files/faq/*.txt")
+        txt_paths = glob.glob("./faq.txt")
         for txt_path in txt_paths:
             loader = TextLoader(file_path=txt_path, encoding='utf-8')
             txt_data = loader.load()
