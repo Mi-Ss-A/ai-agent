@@ -9,7 +9,7 @@ def create_kafka_producer(retries=3, retry_delay=5):
     for i in range(retries):
         try:
             producer = KafkaProducer(
-                bootstrap_servers=['localhost:9092'],
+                bootstrap_servers=['kafka.wibee-infra.svc.cluster.local:9092'],
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 api_version=(0, 10, 1),  # API 버전 명시
                 acks='all',  # 모든 복제본이 메시지를 받았는지 확인
