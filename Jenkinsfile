@@ -19,21 +19,6 @@ pipeline {
             }
         }
 
-         stage('Prepare .env file') {
-            steps {
-                script {
-                    echo "Preparing .env file..."
-                }
-                // withCredentials로 'env-file-credentials' 값을 불러오기
-                withCredentials([string(credentialsId: 'env-file-credentials', variable: 'ENV_CONTENT')]) {
-                    script {
-                        writeFile file: '.env', text: "${ENV_CONTENT}"
-                        echo ".env file created successfully."
-                    }
-                }
-            }
-         }
-
         stage('Build Docker image & Push') {
             steps {
                 script {
