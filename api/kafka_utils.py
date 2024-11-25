@@ -60,7 +60,7 @@ def send_message_to_kafka(content: str, sender: str) -> None:
         raise
 
 
-def send_to_kafka(user_message: str, ai_response: str) -> None:
+def send_to_kafka(user_message: str, ai_response: str) -> bool:
     """사용자 메시지와 AI 응답을 Kafka로 전송하는 함수"""
     try:
         # 사용자 메시지 전송
@@ -76,7 +76,8 @@ def send_to_kafka(user_message: str, ai_response: str) -> None:
         )
 
         print(f"All messages sent successfully to topic {KAFKA_TOPIC}")
+        return True
 
     except Exception as e:
         print(f"Error sending message to Kafka: {str(e)}")
-        raise
+        return False
