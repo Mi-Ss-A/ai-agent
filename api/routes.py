@@ -15,7 +15,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-api_agent = Blueprint('api_agent', __name__, url_prefix='/api')
+api_agent = Blueprint('api_agent', __name__, url_prefix='/api/agent')
 
 class ChatbotAPI:
     def __init__(self):
@@ -49,7 +49,7 @@ class ChatbotAPI:
 chatbot_api = ChatbotAPI()
 
 #front(react) 서버로 부터 text 전달 
-@api_agent.route('/agent/chat', methods=['POST'])
+@api_agent.route('/chat', methods=['POST'])
 def chat():
     data = request.json
      # 데이터 검증
@@ -102,8 +102,9 @@ def portfolio():
         return jsonify({'error': 'No period provided'}), 400
 
     try:
+        logger.info("agent portfolio 요청 전송 완료")
         # Spring 서버로 API 요청
-        SPRING_SERVER_URL = "http://localhost:8082/api/portfolio"  # 환경 변수로 관리 권장
+        SPRING_SERVER_URL = "http://localhost:8282/api/portfolio"  # 환경 변수로 관리 권장
 
         spring_response = requests.post(
             SPRING_SERVER_URL,
