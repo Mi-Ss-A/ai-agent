@@ -37,6 +37,32 @@ pipeline {
             }
         }
 
+        stage('Delete Older Images') {
+            steps {
+                script {
+                    sh '''
+                    # 현재 빌드된 이미지와 직전 버전 태그 계산
+                    IMAGE_NAME="${IMAGE_NAME}"
+                    CURRENT_TAG="${TAG}"
+                    PREVIOUS_TAG="test-$(( ${BUILD_NUMBER} - 1 ))"
+
+                    echo "현재 유지할 이미지 태그: ${CURRENT_TAG}, ${PREVIOUS_TAG}"
+
+                    # 모든 이미지 목록 가져오기
+                    docker images --format '{{.Repository}}:{{.Tag}}' | grep "$IMAGE_NAME" | while read -r IMAGE; do
+                        # 유지할 태그인지 확인 (POSIX 호환 방식으로 수정)
+                        if [ "$IMAGE" = "${IMAGE_NAME}:${CURRENT_TAG}" ] || [ "$IMAGE" = "${IMAGE_NAME}:${PREVIOUS_TAG}" ]; then
+                            echo "유지할 이미지: $IMAGE"
+                        else
+                            echo "삭제할 이미지: $IMAGE"
+                            docker rmi -f "$IMAGE" || echo "이미지 삭제 실패: $IMAGE"
+                        fi
+                    done
+                    '''
+                }
+            }
+        }
+
         stage('Update K8S Manifest') {
             steps {
                 dir('k8s-manifest') {
