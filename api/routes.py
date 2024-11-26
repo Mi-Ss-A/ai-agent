@@ -93,7 +93,7 @@ def chat():
         }), 500
 
     
-@api_agent.route('/portfolio', methods=['POST'])
+@api_agent.route('/agent/portfolio', methods=['POST'])
 def portfolio():
     data = request.json
     period = data.get('period')
