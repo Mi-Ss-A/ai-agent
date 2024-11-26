@@ -103,7 +103,7 @@ def portfolio():
 
     try:
         # Spring 서버로 API 요청
-        SPRING_SERVER_URL = "http://localhost:8082/api/portfolio"  # 환경 변수로 관리 권장
+        SPRING_SERVER_URL = "http://www.wibeechat.com/api/portfolio"  # 환경 변수로 관리 권장
 
         spring_response = requests.post(
             SPRING_SERVER_URL,
