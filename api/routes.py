@@ -109,6 +109,8 @@ def portfolio():
     period = data.get('period')
     sessionId = data.get('sessionId')  # sessionId 확인 및 활용
 
+    logger.info("sessionId : %s",sessionId)
+
     if not period:
         logger.warning("기간 정보가 요청에 포함되지 않았습니다.")
         return jsonify({'error': 'No period provided'}), 400
@@ -121,10 +123,11 @@ def portfolio():
         # Spring 서버 URL 가져오기
         SPRING_SERVER_URL = "http://localhost:8082/api/portfolio"
 
+
         # Spring 서버로 API 요청
         spring_response = requests.post(
             SPRING_SERVER_URL,
-            json={"portfolioData": period, "redisSessionId": sessionId}  # sessionId 포함
+            json={"period": period, "redisSessionId": sessionId}  # sessionId 포함
         )
 
         if spring_response.status_code != 200:
@@ -138,8 +141,8 @@ def portfolio():
         logger.info("Spring 서버 응답 성공: %s", spring_response.json())
 
         # Spring 응답 데이터를 Flask에서 React로 전달
-        return jsonify(spring_response.json())
 
+        return jsonify(spring_response.json())
     except requests.exceptions.RequestException as e:
         logger.error("Spring 서버 요청 중 네트워크 에러 발생", exc_info=True)
         return jsonify({
