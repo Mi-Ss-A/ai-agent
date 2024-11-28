@@ -2,7 +2,11 @@ from kafka import KafkaProducer
 import json
 from datetime import datetime
 import time
-import os
+import logging, os
+
+# Logger 설정
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 KAFKA_BROKER_URL = os.getenv("KAFKA_BROKER_URL", "localhost:9092")  # 기본값은 localhost
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "chat-topic")  # 기본값은 chat-topic
@@ -39,15 +43,17 @@ except Exception as e:
     print(f"Failed to initialize Kafka producer: {str(e)}")
     producer = None
 
-def send_message_to_kafka(content: str, sender: str) -> None:
-    """단일 메시지를 Kafka로 전송하는 헬퍼 함수"""
+
+def send_message_to_kafka(content: str, sender: str, sessionId: str) -> None:
+    """Kafka로 메시지를 전송하는 헬퍼 함수"""
     if producer is None:
         raise Exception("Kafka producer not initialized")
 
     message = {
         'content': content,
         'sender': sender,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'sessionId': sessionId  
     }
 
     try:
@@ -60,24 +66,22 @@ def send_message_to_kafka(content: str, sender: str) -> None:
         raise
 
 
-def send_to_kafka(user_message: str, ai_response: str) -> bool:
-    """사용자 메시지와 AI 응답을 Kafka로 전송하는 함수"""
+def send_to_kafka(user_message: str, ai_response: str,session_id: str = None) -> bool:
+    """Kafka로 사용자 메시지와 AI 응답을 전송하는 함수."""
     try:
         # 사용자 메시지 전송
         send_message_to_kafka(
             content=user_message,
-            sender="USER"
+            sender="USER",
+            sessionId=session_id  # 메타데이터 포함
         )
-
         # AI 응답 전송
         send_message_to_kafka(
             content=ai_response,
-            sender="AI"
+            sender="AI",
+            sessionId=session_id 
         )
-
-        print(f"All messages sent successfully to topic {KAFKA_TOPIC}")
         return True
-
     except Exception as e:
-        print(f"Error sending message to Kafka: {str(e)}")
+        logger.error(f"Kafka 메시지 전송 실패: {e}")
         return False

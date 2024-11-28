@@ -6,7 +6,8 @@ from api.routes import ChatbotAPI
 
 
 app = Flask(__name__)
-CORS(app) #모든 출처에서 접근을 허용    
+# CORS 설정: React 애플리케이션 도메인 허용
+CORS(app, origins=["http://localhost:3000", "http://localhost:8081"], supports_credentials=True)
 app.register_blueprint(api_agent) #api 라우팅
 
 
