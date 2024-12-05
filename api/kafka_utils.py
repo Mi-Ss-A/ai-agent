@@ -2,19 +2,21 @@ from kafka import KafkaProducer
 import json
 from datetime import datetime
 import time
-import logging
+import logging, os
 
 # Logger 설정
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+KAFKA_BROKER_URL = os.getenv("KAFKA_BROKER_URL", "localhost:9092")  # 기본값은 localhost
+KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "chat-topic")  # 기본값은 chat-topic
 
 def create_kafka_producer(retries=3, retry_delay=5):
     """Kafka Producer 생성 함수 with 재시도 로직"""
     for i in range(retries):
         try:
             producer = KafkaProducer(
-                bootstrap_servers=['localhost:9092'],
+                bootstrap_servers=[KAFKA_BROKER_URL],
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 api_version=(0, 10, 1),  # API 버전 명시
                 acks='all',  # 모든 복제본이 메시지를 받았는지 확인
@@ -40,8 +42,6 @@ try:
 except Exception as e:
     print(f"Failed to initialize Kafka producer: {str(e)}")
     producer = None
-
-KAFKA_TOPIC = 'chat-topic'
 
 
 def send_message_to_kafka(content: str, sender: str, sessionId: str) -> None:
