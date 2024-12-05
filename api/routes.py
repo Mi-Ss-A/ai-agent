@@ -109,7 +109,7 @@ def portfolio():
     period = data.get('period')
     sessionId = data.get('sessionId')  # sessionId 확인 및 활용
 
-    logger.info("sessionId : %s",sessionId)
+    logger.info("sessionId : %s", sessionId)
 
     if not period:
         logger.warning("기간 정보가 요청에 포함되지 않았습니다.")
@@ -120,14 +120,11 @@ def portfolio():
         return jsonify({'error': 'No session ID provided'}), 400
 
     try:
-        # Spring 서버 URL 가져오기
         SPRING_SERVER_URL = "http://localhost:8082/api/portfolio"
 
-
-        # Spring 서버로 API 요청
         spring_response = requests.post(
             SPRING_SERVER_URL,
-            json={"period": period, "redisSessionId": sessionId}  # sessionId 포함
+            json={"period": period, "redisSessionId": sessionId}
         )
 
         if spring_response.status_code != 200:
@@ -140,9 +137,25 @@ def portfolio():
 
         logger.info("Spring 서버 응답 성공: %s", spring_response.json())
 
-        # Spring 응답 데이터를 Flask에서 React로 전달
+        try:
+            user_message = "금융 포트폴리오를 요청하셨습니다."
+            kafka_success = send_to_kafka(
+                user_message=user_message,
+                ai_response=spring_response.json().get("message") + 
+                            " 포트폴리오 정보를 확인하시려면 /preference/Portfolios를 확인해보세요!",
+                session_id=sessionId
+            )
+
+            if not kafka_success:
+                logger.warning("Kafka 메시지 전송 실패")
+                return jsonify({'error': 'Kafka message sending failed', 'status': 'error'}), 500
+
+        except Exception as kafka_error:
+            logger.error("Kafka 메시지 전송 중 오류 발생: %s", str(kafka_error))
+            return jsonify({'error': str(kafka_error), 'status': 'error'}), 500
 
         return jsonify(spring_response.json())
+
     except requests.exceptions.RequestException as e:
         logger.error("Spring 서버 요청 중 네트워크 에러 발생", exc_info=True)
         return jsonify({
@@ -158,3 +171,4 @@ def portfolio():
             'details': str(e),
             'status': 'error'
         }), 500
+
