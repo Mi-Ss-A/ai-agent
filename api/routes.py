@@ -121,8 +121,7 @@ def portfolio():
 
     try:
         # Spring 서버 URL 가져오기
-        SPRING_SERVER_URL = "http://localhost:8082/api/portfolio"
-
+        SPRING_SERVER_URL = "http://www.wibeechat.com/api/portfolio"
 
         # Spring 서버로 API 요청
         spring_response = requests.post(
